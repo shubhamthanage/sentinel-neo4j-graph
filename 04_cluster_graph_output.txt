@@ -1,0 +1,4 @@
+device: D_c48c331b4ed19bce
+nodes: 1 Device + 16 Customer + 12 Merchant = 29
+relationships: 16 USED_DEVICE + 118 PAID = 134   fraud-labelled payments: 8
+wrote screenshots/05_cluster_graph.svg

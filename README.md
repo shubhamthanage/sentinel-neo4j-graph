@@ -16,9 +16,11 @@ This repo loads PayVista SENTINEL entities into Neo4j and finds those patterns w
 | `02_load_graph.py` | Creates uniqueness constraints and loads nodes and relationships with `MERGE` |
 | `03_queries.py` | Runs the three Cypher queries, prints a text summary of the most suspicious cluster and the Cypher for its graph view |
 | `queries.cypher` | The same Cypher (Q1, Q2, Q3, the cluster view and the cluster summaries), ready to paste into Neo4j Browser |
+| `04_cluster_graph.py` | Reads the most suspicious cluster from Neo4j and draws its graph as `screenshots/05_cluster_graph.svg` |
+| `04_cluster_graph_output.txt` | Text output of `python 04_cluster_graph.py` from my run |
 | `03_queries_output.txt` | Full text output of `python 03_queries.py` from my run (Q1-Q3 and the cluster summary) |
 | `requirements.txt` | Python packages: `neo4j`, `python-dotenv`, `pandas` |
-| `screenshots/` | Output of every step from my run |
+| `screenshots/` | Output of every step from my run, plus the generated cluster graph `05_cluster_graph.svg` |
 
 Not committed (see `.gitignore`): `.env`, the instructor's `supabase_db_kit/` data and the `neo4j_data/` Docker volume.
 
@@ -89,6 +91,7 @@ With the default `TARGET_TXNS=5000` this gives **856 customers, 1,971 devices, 2
 python 01_connect.py          # verify_connectivity()
 python 02_load_graph.py       # constraints + MERGE load. Run it a second time: 0 new nodes, 0 new relationships
 python 03_queries.py          # the three Cypher queries + cluster summary + the cluster query for the graph view
+python 04_cluster_graph.py    # draws the most suspicious cluster as screenshots/05_cluster_graph.svg
 ```
 Optional: `python 02_load_graph.py --dry-run` prepares the data and prints the counts without touching Neo4j.
 
@@ -170,8 +173,25 @@ RETURN d, u, c, p, m
 It returns 118 records (one per payment made from this device). In the Graph view that is **29 nodes (1 Device, 16 Customers,
 12 Merchants) and 134 relationships (16 USED_DEVICE, 118 PAID)**.
 
-### Graph view (Neo4j Browser)
-![cluster graph view](screenshots/05_cluster_graph.png)
+### Graph view
+`python 04_cluster_graph.py` takes the top device from Query 1, reads this same subgraph from Neo4j and writes the graph picture
+`screenshots/05_cluster_graph.svg` (an SVG, so the picture is plain text and can be opened in any browser). Its output from my run
+(`04_cluster_graph_output.txt`):
+```
+device: D_c48c331b4ed19bce
+nodes: 1 Device + 16 Customer + 12 Merchant = 29
+relationships: 16 USED_DEVICE + 118 PAID = 134   fraud-labelled payments: 8
+wrote screenshots/05_cluster_graph.svg
+```
+In the picture the device is in the centre (blue), the 16 customers are on the inner ring, linked to it by USED_DEVICE (red outline =
+customer with a fraud-labelled payment), and the 12 merchants are on the outer ring. Each PAID edge is labelled with the number of
+payments, and is red when it includes a fraud-labelled payment.
+
+![cluster graph generated from Neo4j](screenshots/05_cluster_graph.svg)
+
+The same query in Neo4j Browser's Graph view (29 nodes, 134 relationships):
+
+![cluster graph view in Neo4j Browser](screenshots/05_cluster_graph.png)
 
 ### The same cluster as a diagram
 Drawn from the query result (`CLUSTER_VIEW` in `03_queries.py`). Red customers made at least one fraud-labelled payment from this
@@ -314,7 +334,7 @@ This looks like a mule or ring device, so the device, its 16 customers and these
 
 ![constraints](screenshots/04_constraints.png)
 
-**6. Cluster graph** - Graph view of the cluster query for `D_c48c331b4ed19bce` in Neo4j Browser: the device (blue) in the centre, the 16 customers (pink) linked to it by USED_DEVICE, and the 12 merchants (orange) they paid from it. 29 nodes, 134 relationships, 118 records.
+**6. Cluster graph** - `screenshots/05_cluster_graph.svg` (drawn by `04_cluster_graph.py`, shown in the cluster section above) and the Graph view of the cluster query for `D_c48c331b4ed19bce` in Neo4j Browser: the device (blue) in the centre, the 16 customers (pink) linked to it by USED_DEVICE, and the 12 merchants (orange) they paid from it. 29 nodes, 134 relationships, 118 records.
 
 ![cluster](screenshots/05_cluster_graph.png)
 
