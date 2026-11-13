@@ -56,3 +56,22 @@ LIMIT 10;
 MATCH (d:Device {device_id: '<DEVICE_ID>'})<-[u:USED_DEVICE]-(c:Customer)
 OPTIONAL MATCH (c)-[p:PAID]->(m:Merchant) WHERE p.device_id = d.device_id
 RETURN d, u, c, p, m;
+
+// Cluster summaries (CLUSTER_TOTALS, CLUSTER_CUSTOMERS, CLUSTER_MERCHANTS in 03_queries.py): replace <DEVICE_ID> as above
+MATCH (d:Device {device_id: '<DEVICE_ID>'})<-[u:USED_DEVICE]-(c:Customer)
+OPTIONAL MATCH (c)-[p:PAID]->(m:Merchant) WHERE p.device_id = d.device_id
+RETURN count(DISTINCT c) AS customers, count(DISTINCT m) AS merchants,
+       count(DISTINCT u) AS used_device_edges, count(p) AS paid_edges, sum(p.fraud_label) AS fraud_payments;
+
+MATCH (d:Device {device_id: '<DEVICE_ID>'})<-[u:USED_DEVICE]-(c:Customer)
+OPTIONAL MATCH (c)-[p:PAID]->(m:Merchant) WHERE p.device_id = d.device_id
+RETURN c.customer_id AS customer, toString(date(u.first_seen)) AS first_seen,
+       toString(date(u.last_seen)) AS last_seen, count(p) AS payments,
+       count(DISTINCT m) AS merchants, sum(p.fraud_label) AS fraud_payments
+ORDER BY fraud_payments DESC, payments DESC, customer;
+
+MATCH (d:Device {device_id: '<DEVICE_ID>'})<-[:USED_DEVICE]-(c:Customer)-[p:PAID]->(m:Merchant)
+WHERE p.device_id = d.device_id
+RETURN m.merchant_id AS merchant, m.category AS category, m.city AS city,
+       count(p) AS payments, count(DISTINCT c) AS customers, sum(p.fraud_label) AS fraud_payments
+ORDER BY payments DESC, merchant;

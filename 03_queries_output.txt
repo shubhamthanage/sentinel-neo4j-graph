@@ -1,0 +1,87 @@
+
+=== Q1: devices used by 3+ customers within 7 days ===
+device_id               customers_in_7_days     payments                fraud_payments        
+D_c48c331b4ed19bce      3                       118                     8                     
+D_4637ef8d9571a89a      3                       79                      6                     
+D_fd8b0f414ced6d12      3                       74                      5                     
+D_184ed5721b197852      3                       99                      4                     
+D_89ec043739e82c62      3                       91                      4                     
+D_bbaf46afe6619750      3                       109                     4                     
+D_0c947fb45bb50e72      3                       64                      3                     
+D_cef59fb95c10c54b      3                       73                      3                     
+
+=== Q2: customers within 2 hops of a fraud-labelled payment (top 15) ===
+customer                fraud_customers_nearby  via_devices           
+C_8403fb2e903349ff      29                      ['D_443c9fdd18680358',
+C_beca2cef67a57db4      25                      ['D_26be10b1819a5412',
+C_c25537057bf5eab7      22                      ['D_39fd49b9f5ab24e8',
+C_e5e80f775c861dae      20                      ['D_39fd49b9f5ab24e8',
+C_54f34f5ba61f0d0b      18                      ['D_ac17d1f10ed3ab06',
+C_7ff05bc8ddc5c607      18                      ['D_bc4666e13344fe82',
+C_be8f05a449d02984      18                      ['D_0a7613e59c6db90f',
+C_0ad87b611d9f0929      17                      ['D_443c9fdd18680358',
+C_781893327d843b75      17                      ['D_d47bbd5ee227da3a',
+C_d42ce3705aa17c25      17                      ['D_c48c331b4ed19bce',
+C_2ae704c2f6e2f669      16                      ['D_39fd49b9f5ab24e8',
+C_37f1f0475565859f      16                      ['D_29bd088d1b67a680',
+C_6d464606b1bb8dc7      16                      ['D_bc4666e13344fe82',
+C_91dcd7fb17533889      16                      ['D_44e48d600c2deea3',
+C_a89c0f75837f8384      16                      ['D_d47bbd5ee227da3a',
+Received notification from DBMS server: <GqlStatusObject gql_status='01N00', status_description='warn: feature deprecated. CALL subquery without a variable scope clause is deprecated. Use CALL () { ... }', position=<SummaryInputPosition line=2, column=1, offset=1>, raw_classification='DEPRECATION', classification=<NotificationClassification.DEPRECATION: 'DEPRECATION'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'DEPRECATION', '_severity': 'WARNING', '_position': {'offset': 1, 'line': 2, 'column': 1}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: '\nCALL {\n\nMATCH (c:Customer)-[p:PAID]->(:Merchant)\nWHERE p.device_id IS NOT NULL\nWITH p.device_id AS device_id, collect({customer: c.customer_id, t: p.time}) AS events\nUNWIND events AS anchor\nWITH device_id, events, anchor.t AS window_start\nWITH device_id, window_start,\n     [e IN events WHERE e.t >= window_start AND e.t < window_start + duration({days: 7}) | e.customer] AS in_window\nUNWIND in_window AS customer\nWITH device_id, window_start, collect(DISTINCT customer) AS customers\nWHERE size(customers) >= 3\nWITH device_id, max(size(customers)) AS customers_in_7_days\nMATCH (:Customer)-[p:PAID]->(:Merchant)\nWHERE p.device_id = device_id\nRETURN DISTINCT device_id\n\n\n}\nWITH collect(device_id) AS shared_ids\nMATCH (:Customer)-[p:PAID]->(m:Merchant)\nWHERE p.device_id IN shared_ids\nRETURN m.merchant_id AS merchant, m.category AS category, m.city AS city,\n       count(p) AS payments_from_shared_devices,\n       count(DISTINCT p.device_id) AS shared_devices_used,\n       sum(p.fraud_label) AS fraud_payments\nORDER BY payments_from_shared_devices DESC, merchant\nLIMIT 10\n'
+
+=== Q3: merchants most often paid from shared devices (top 10) ===
+merchant                category                city                    payments_from_shared_devices  shared_devices_used     fraud_payments        
+M_73fa75978cd80349      electronics             Delhi                   44                      4                       5                     
+M_8a78374d3977a8f1      electronics             Bengaluru               33                      3                       1                     
+M_49967ebb50bb79c3      gaming                  Chennai                 31                      3                       3                     
+M_8094417e158fefdb      electronics             Indore                  26                      3                       0                     
+M_8613b75179e11c81      gaming                  Pune                    25                      2                       1                     
+M_e9d157b33b203fe1      gaming                  Jaipur                  25                      3                       1                     
+M_3832524c9a9d053a      electronics             Indore                  24                      2                       1                     
+M_403c0e4157d1d5bc      gift_cards              Indore                  24                      2                       0                     
+M_922e1ba1d4d04ff2      electronics             Hyderabad               24                      3                       2                     
+M_f5086339052622fa      gaming                  Jamshedpur              23                      2                       1                     
+
+=== Cluster around device D_c48c331b4ed19bce: totals ===
+customers               merchants               used_device_edges       paid_edges              fraud_payments        
+16                      12                      16                      118                     8                     
+
+=== Cluster: customers who used this device ===
+customer                first_seen              last_seen               payments                merchants               fraud_payments        
+C_aee76b01402adacf      2025-08-23              2025-08-23              9                       1                       1                     
+C_cd97879377498ce6      2025-04-09              2025-04-09              9                       1                       1                     
+C_a3fef1d1bb96c6fe      2025-02-26              2025-02-26              8                       1                       1                     
+C_2bd85847476a6871      2025-02-26              2025-02-26              7                       1                       1                     
+C_ef9ffbb4eee94ac8      2025-01-03              2025-01-03              7                       1                       1                     
+C_7401fb0078f9b1e2      2025-06-28              2025-06-28              6                       1                       1                     
+C_d42ce3705aa17c25      2024-12-11              2024-12-11              6                       1                       1                     
+C_1eee836953b656c1      2025-04-09              2025-04-09              5                       1                       1                     
+C_549a1aa6bff02be4      2025-09-07              2025-09-07              9                       1                       0                     
+C_5bc1f3093ad18d0b      2025-10-01              2025-10-01              9                       1                       0                     
+C_b87f19ade24d3bb4      2025-08-15              2025-08-15              9                       1                       0                     
+C_bdd6461943c0286f      2026-02-13              2026-02-13              9                       1                       0                     
+C_31b398af779a1a10      2025-02-21              2025-02-21              7                       1                       0                     
+C_60b8cec4a71a0882      2025-09-14              2025-09-14              7                       1                       0                     
+C_7b4d24c2b0433a28      2025-09-15              2025-09-15              6                       1                       0                     
+C_1da562eedfe64e14      2025-03-05              2025-03-05              5                       1                       0                     
+
+=== Cluster: merchants paid from this device ===
+merchant                category                city                    payments                customers               fraud_payments        
+M_8613b75179e11c81      gaming                  Pune                    16                      2                       1                     
+M_348a9e09345c7477      electronics             Kolkata                 14                      2                       1                     
+M_f5086339052622fa      gaming                  Jamshedpur              14                      2                       1                     
+M_ce0b45ab7127ca6a      electronics             Indore                  13                      2                       2                     
+M_5f9ec56b007734f2      gift_cards              Hyderabad               9                       1                       1                     
+M_8a78374d3977a8f1      electronics             Bengaluru               9                       1                       0                     
+M_922e1ba1d4d04ff2      electronics             Hyderabad               9                       1                       0                     
+M_73fa75978cd80349      electronics             Delhi                   8                       1                       1                     
+M_1457a882f7587855      gift_cards              Bengaluru               7                       1                       0                     
+M_fc112fe3be63f797      gaming                  Pune                    7                       1                       0                     
+M_5fde3bb6a98424ab      gift_cards              Ahmedabad               6                       1                       0                     
+M_705380854377bd52      gaming                  Bhubaneswar             6                       1                       1                     
+
+Paste this into Neo4j Browser (http://localhost:7474) for the graph view of the most suspicious cluster:
+
+MATCH (d:Device {device_id: 'D_c48c331b4ed19bce'})<-[u:USED_DEVICE]-(c:Customer)
+OPTIONAL MATCH (c)-[p:PAID]->(m:Merchant) WHERE p.device_id = d.device_id
+RETURN d, u, c, p, m

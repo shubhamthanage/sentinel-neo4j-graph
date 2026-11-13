@@ -58,6 +58,31 @@ CLUSTER_VIEW = """MATCH (d:Device {{device_id: '{device}'}})<-[u:USED_DEVICE]-(c
 OPTIONAL MATCH (c)-[p:PAID]->(m:Merchant) WHERE p.device_id = d.device_id
 RETURN d, u, c, p, m"""
 
+# ---- Cluster evidence: the same subgraph as CLUSTER_VIEW, summarised as text ----------------
+CLUSTER_TOTALS = """
+MATCH (d:Device {device_id: $device})<-[u:USED_DEVICE]-(c:Customer)
+OPTIONAL MATCH (c)-[p:PAID]->(m:Merchant) WHERE p.device_id = d.device_id
+RETURN count(DISTINCT c) AS customers, count(DISTINCT m) AS merchants,
+       count(DISTINCT u) AS used_device_edges, count(p) AS paid_edges, sum(p.fraud_label) AS fraud_payments
+"""
+
+CLUSTER_CUSTOMERS = """
+MATCH (d:Device {device_id: $device})<-[u:USED_DEVICE]-(c:Customer)
+OPTIONAL MATCH (c)-[p:PAID]->(m:Merchant) WHERE p.device_id = d.device_id
+RETURN c.customer_id AS customer, toString(date(u.first_seen)) AS first_seen,
+       toString(date(u.last_seen)) AS last_seen, count(p) AS payments,
+       count(DISTINCT m) AS merchants, sum(p.fraud_label) AS fraud_payments
+ORDER BY fraud_payments DESC, payments DESC, customer
+"""
+
+CLUSTER_MERCHANTS = """
+MATCH (d:Device {device_id: $device})<-[:USED_DEVICE]-(c:Customer)-[p:PAID]->(m:Merchant)
+WHERE p.device_id = d.device_id
+RETURN m.merchant_id AS merchant, m.category AS category, m.city AS city,
+       count(p) AS payments, count(DISTINCT c) AS customers, sum(p.fraud_label) AS fraud_payments
+ORDER BY payments DESC, merchant
+"""
+
 
 def show(title, rows):
     print(f"\n=== {title} ===")
@@ -80,10 +105,18 @@ def main():
              [r.data() for r in s.run(NEAR_FRAUD)])
         show("Q3: merchants most often paid from shared devices (top 10)",
              [r.data() for r in s.run(MERCHANTS_FROM_SHARED)])
+
+        if q1:
+            worst = q1[0]["device_id"]
+            show(f"Cluster around device {worst}: totals",
+                 [s.run(CLUSTER_TOTALS, device=worst).single().data()])
+            show("Cluster: customers who used this device",
+                 [r.data() for r in s.run(CLUSTER_CUSTOMERS, device=worst)])
+            show("Cluster: merchants paid from this device",
+                 [r.data() for r in s.run(CLUSTER_MERCHANTS, device=worst)])
     driver.close()
 
     if q1:
-        worst = q1[0]["device_id"]
         print("\nPaste this into Neo4j Browser (http://localhost:7474) for the graph view of the most suspicious cluster:\n")
         print(CLUSTER_VIEW.format(device=worst))
 
