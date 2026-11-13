@@ -1,0 +1,13 @@
+# Local Neo4j for the SENTINEL graph task.  Start with:  docker compose up -d
+# Browser UI: http://localhost:7474   Bolt (Python driver): bolt://localhost:7687
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: neo4j-sentinel
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}     # read from your .env file, never hard-coded
+    volumes:
+      - ./neo4j_data:/data

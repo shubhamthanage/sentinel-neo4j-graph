@@ -1,0 +1,11 @@
+.env
+neo4j_data/
+supabase_db_kit/
+*.csv.gz
+*.csv
+*.parquet
+__pycache__/
+.venv/
+.idea/
+.DS_Store
+venv/
