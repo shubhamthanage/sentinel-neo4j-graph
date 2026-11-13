@@ -165,7 +165,7 @@ MATCH (d:Device {device_id: 'D_c48c331b4ed19bce'})<-[u:USED_DEVICE]-(c:Customer)
 OPTIONAL MATCH (c)-[p:PAID]->(m:Merchant) WHERE p.device_id = d.device_id
 RETURN d, u, c, p, m
 ```
-It returns 118 records (one per payment made from this device).
+It returns 118 records (one per payment made from this device). In the Graph view that is 29 nodes (1 Device, 16 Customers, 12 Merchants) and 134 relationships (16 USED_DEVICE, 118 PAID).
 
 **What it shows:** device `D_c48c331b4ed19bce` sits in the centre. 16 different customers have paid from it, and 3 of them inside
 the same 7 days. Between them they made 118 payments to 12 merchants, and 8 of
@@ -194,7 +194,7 @@ of a mule or ring device, so the device and its customers should be reviewed tog
 
 ![constraints](screenshots/04_constraints.png)
 
-**6. Cluster** - the cluster query for `D_c48c331b4ed19bce` in Neo4j Browser (118 records).
+**6. Cluster graph** - Graph view of the cluster query for `D_c48c331b4ed19bce` in Neo4j Browser: the device (blue) in the centre, the 16 customers (pink) linked to it by USED_DEVICE, and the 12 merchants (orange) they paid from it. 29 nodes, 134 relationships, 118 records.
 
 ![cluster](screenshots/05_cluster_graph.png)
 
